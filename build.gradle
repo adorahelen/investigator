@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'hycu'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    // 아파치 티카 의존성 (텍스트 추출 및 파싱)
+    implementation 'org.apache.tika:tika-core:2.9.2' // 최신 안정화 버전을 확인하여 사용하세요.
+    implementation 'org.apache.tika:tika-parsers-standard-package:2.9.2' // PDF 파서 포함
+
+    // 로깅을 위한 SLF4J (Tika 내부에서 사용됨)
+    // Tika가 Logback이나 Log4j와 같은 구체적인 로깅 구현체를 찾지 못하면 경고를 출력할 수 있습니다.
+    // 필요하다면 아래 중 하나를 추가하세요. (slf4j-simple은 간단한 콘솔 출력)
+    implementation 'org.slf4j:slf4j-simple:2.0.13' // Tika 2.x는 SLF4J 2.x와 호환됩니다.
+
+
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
