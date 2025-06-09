@@ -1,8 +1,6 @@
 package hycu.investigator.msa;
 
-import hycu.investigator.msa.extractor.ContentExtractor;
-import hycu.investigator.msa.extractor.PdfContentExtractor;
-import hycu.investigator.msa.extractor.PlainTextFileContentExtractor;
+import hycu.investigator.msa.extractor.*;
 import hycu.investigator.msa.pattern.PrivacyPatternProvider;
 import hycu.investigator.msa.service.PrivacyDetectionService;
 
@@ -20,22 +18,26 @@ import java.util.concurrent.TimeUnit;
 
 public class PdfPrivacyDetectionApplication {
 
-    private static final int THREAD_POOL_SIZE = 4; // 스레드 풀 크기
+    private static final int THREAD_POOL_SIZE = 4;
 
     public static void main(String[] args) {
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-        // 의존성 주입 (수동 DI)
         PrivacyPatternProvider patternProvider = new PrivacyPatternProvider();
+
+        // **새로 추가된 추출기들을 리스트에 포함합니다.**
         List<ContentExtractor> contentExtractors = Arrays.asList(
                 new PdfContentExtractor(),
+                new DocxContentExtractor(),   // DOCX 추출기 추가
+                new XlsxContentExtractor(),   // XLSX 추출기 추가
                 new PlainTextFileContentExtractor()
         );
+
         PrivacyDetectionService detectionService = new PrivacyDetectionService(executorService, patternProvider, contentExtractors);
 
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("--- PDF/Text 파일 개인정보 탐지 솔루션 시작 ---");
+        System.out.println("--- PDF/Text/DOCX/XLSX 파일 개인정보 탐지 솔루션 시작 ---"); // 시작 메시지 업데이트
         System.out.println("탐지할 파일 경로를 입력하세요. (종료: 'exit' 또는 'quit')");
 
         while (true) {
@@ -50,17 +52,14 @@ public class PdfPrivacyDetectionApplication {
             Path filePath = Paths.get(filePathString);
 
             try {
-                // 파일 존재 여부 및 읽기 권한 확인
                 if (!Files.exists(filePath) || !Files.isReadable(filePath)) {
                     System.err.println("오류: 파일을 찾을 수 없거나 읽을 수 없습니다 - " + filePathString);
                     System.out.println("정확한 파일 경로를 다시 입력해주세요.");
                     continue;
                 }
 
-                // 개인정보 탐지 서비스 호출
                 Map<String, List<String>> results = detectionService.detectPrivacy(filePath);
 
-                // 결과 출력
                 System.out.println("\n--- 탐지 결과 ---");
                 boolean foundAny = false;
                 for (Map.Entry<String, List<String>> entry : results.entrySet()) {
@@ -82,7 +81,6 @@ public class PdfPrivacyDetectionApplication {
             }
         }
 
-        // 프로그램 종료 시 ExecutorService 종료
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
