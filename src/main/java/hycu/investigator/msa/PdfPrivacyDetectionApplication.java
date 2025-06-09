@@ -26,18 +26,30 @@ public class PdfPrivacyDetectionApplication {
         PrivacyPatternProvider patternProvider = new PrivacyPatternProvider();
 
         // **새로 추가된 추출기들을 리스트에 포함합니다.**
+//        List<ContentExtractor> contentExtractors = Arrays.asList(
+//                new PdfContentExtractor(),
+//                new DocxContentExtractor(),   // DOCX 추출기 추가
+//                new XlsxContentExtractor(),   // XLSX 추출기 추가
+//                new PlainTextFileContentExtractor()
+//        );
+
+        // **이제 TikaUniversalContentExtractor 하나로 대부분의 문서 형식을 처리합니다.**
+        // PlainTextFileContentExtractor는 Tika를 거치지 않고 순수 텍스트 파일을 빠르게 처리하기 위해 유지할 수 있습니다.
+        // TikaUniversalContentExtractor가 모든 문서 타입을 커버하기 때문에,
+        // 필요에 따라 DocxContentExtractor, XlsxContentExtractor는 제거해도 됩니다.
         List<ContentExtractor> contentExtractors = Arrays.asList(
-                new PdfContentExtractor(),
-                new DocxContentExtractor(),   // DOCX 추출기 추가
-                new XlsxContentExtractor(),   // XLSX 추출기 추가
-                new PlainTextFileContentExtractor()
+                new TikaUniversalContentExtractor(), // Tika 기반 범용 추출기
+                new PlainTextFileContentExtractor()  // 일반 텍스트 파일용 (선택 사항)
         );
 
         PrivacyDetectionService detectionService = new PrivacyDetectionService(executorService, patternProvider, contentExtractors);
 
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("--- PDF/Text/DOCX/XLSX 파일 개인정보 탐지 솔루션 시작 ---"); // 시작 메시지 업데이트
+//        System.out.println("--- PDF/Text/DOCX/XLSX 파일 개인정보 탐지 솔루션 시작 ---"); // 시작 메시지 업데이트
+//        System.out.println("탐지할 파일 경로를 입력하세요. (종료: 'exit' 또는 'quit')");
+
+        System.out.println("--- 범용 파일 개인정보 탐지 솔루션 시작 (Tika 활용) ---"); // 시작 메시지 업데이트
         System.out.println("탐지할 파일 경로를 입력하세요. (종료: 'exit' 또는 'quit')");
 
         while (true) {
