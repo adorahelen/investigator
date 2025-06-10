@@ -1,45 +1,52 @@
 package hycu.investigator.msa.service;
 
-import hycu.investigator.msa.pattern.PrivacyPatternProvider;
-import hycu.investigator.msa.detector.PrivacyDetector;
-import hycu.investigator.msa.domain.PrivacyPattern;
-import hycu.investigator.msa.extractor.ContentExtractor;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
+import hycu.investigator.msa.detector.PrivacyDetector;
+import hycu.investigator.msa.domain.PrivacyPattern;
+import hycu.investigator.msa.extractor.ContentExtractor;
+import hycu.investigator.msa.pattern.PrivacyPatternProvider;
+import org.springframework.stereotype.Service; // 스프링의 @Service 어노테이션 추가
+
+@Service // 스프링 컴포넌트 스캔 대상이 되도록
 public class PrivacyDetectionService {
 
     private final ExecutorService executorService;
     private final List<PrivacyPattern> patterns;
-    private final List<ContentExtractor> contentExtractors; // 여러 추출기 지원
+    private final List<ContentExtractor> contentExtractors;
 
+    // 스프링이 의존성을 주입하도록 생성자 기반 DI 사용
     public PrivacyDetectionService(ExecutorService executorService, PrivacyPatternProvider patternProvider, List<ContentExtractor> contentExtractors) {
         this.executorService = executorService;
         this.patterns = patternProvider.getAllPatterns();
         this.contentExtractors = contentExtractors;
     }
 
-    public Map<String, List<String>> detectPrivacy(Path filePath) throws IOException {
-        String fileContent = "";
+    public Map<String, List<String>> detectPrivacy(InputStream fileInputStream, String originalFilename) throws IOException {
+        String fileContent = null; // null로 초기화
         boolean extracted = false;
 
         // 적절한 ContentExtractor 찾아서 사용
         for (ContentExtractor extractor : contentExtractors) {
-            if (extractor.supports(filePath)) {
-                fileContent = extractor.extract(filePath);
+            if (extractor.supports(originalFilename)) {
+                // InputStream은 한 번만 읽을 수 있으므로, 각 추출기 시도 전에 재생성 또는 복사 필요
+                // 여기서는 간단하게 첫 번째 지원하는 추출기로 시도하고 실패하면 에러를 던지도록 합니다.
+                // 실제 프로덕션에서는 ByteArrayInputStream으로 복사하여 여러 추출기가 시도하도록 하는 것이 좋습니다.
+                fileContent = extractor.extract(fileInputStream, originalFilename);
                 extracted = true;
                 break;
             }
         }
 
-        if (!extracted) {
-            throw new IOException("지원하지 않는 파일 형식 또는 추출기 없음: " + filePath);
+        if (!extracted || fileContent == null) {
+            throw new IOException("지원하지 않는 파일 형식 또는 텍스트 추출 실패: " + originalFilename);
         }
 
         if (fileContent.trim().isEmpty()) {
