@@ -1,45 +1,90 @@
 package hycu.investigator.msa.service;
 
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
-
 import hycu.investigator.msa.detector.PrivacyDetector;
 import hycu.investigator.msa.domain.PrivacyPattern;
 import hycu.investigator.msa.extractor.ContentExtractor;
 import hycu.investigator.msa.pattern.PrivacyPatternProvider;
-import org.springframework.stereotype.Service; // 스프링의 @Service 어노테이션 추가
+import org.springframework.scheduling.annotation.Async; // @Async 임포트
+import org.springframework.stereotype.Service;
 
-@Service // 스프링 컴포넌트 스캔 대상이 되도록
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+import java.util.concurrent.*;
+
+@Service
 public class PrivacyDetectionService {
 
     private final ExecutorService executorService;
     private final List<PrivacyPattern> patterns;
     private final List<ContentExtractor> contentExtractors;
+    // 비동기 작업 결과를 저장할 임시 저장소 (실제 운영 환경에서는 Redis/DB 등 사용)
+    private final Map<String, AsyncTaskResult> taskResults = new ConcurrentHashMap<>();
 
-    // 스프링이 의존성을 주입하도록 생성자 기반 DI 사용
     public PrivacyDetectionService(ExecutorService executorService, PrivacyPatternProvider patternProvider, List<ContentExtractor> contentExtractors) {
         this.executorService = executorService;
         this.patterns = patternProvider.getAllPatterns();
         this.contentExtractors = contentExtractors;
     }
 
-    public Map<String, List<String>> detectPrivacy(InputStream fileInputStream, String originalFilename) throws IOException {
-        String fileContent = null; // null로 초기화
+    // 비동기 작업 상태를 나타낼 클래스
+    public static class AsyncTaskResult {
+        public enum Status { PENDING, PROCESSING, COMPLETED, FAILED }
+        private Status status;
+        private Map<String, List<String>> result;
+        private String errorMessage;
+
+        public AsyncTaskResult(Status status) {
+            this.status = status;
+        }
+
+        public Status getStatus() { return status; }
+        public void setStatus(Status status) { this.status = status; }
+        public Map<String, List<String>> getResult() { return result; }
+        public void setResult(Map<String, List<String>> result) { this.result = result; }
+        public String getErrorMessage() { return errorMessage; }
+        public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+    }
+
+    // 비동기 작업을 시작하고, 작업 ID를 반환
+    @Async // 이 메서드는 별도의 스레드에서 실행됩니다.
+    public CompletableFuture<Void> startPrivacyDetection(String taskId, byte[] fileBytes, String originalFilename) {
+        taskResults.put(taskId, new AsyncTaskResult(AsyncTaskResult.Status.PROCESSING)); // 작업 시작 상태로 변경
+
+        return CompletableFuture.runAsync(() -> {
+            try (InputStream fileInputStream = new java.io.ByteArrayInputStream(fileBytes)) { // 바이트 배열로 InputStream 재생성
+                Map<String, List<String>> detectionResult = performDetection(fileInputStream, originalFilename);
+                AsyncTaskResult result = taskResults.get(taskId);
+                result.setStatus(AsyncTaskResult.Status.COMPLETED);
+                result.setResult(detectionResult);
+            } catch (IOException e) {
+                System.err.println("파일 처리 중 I/O 오류 발생 (비동기): " + e.getMessage());
+                AsyncTaskResult result = taskResults.get(taskId);
+                result.setStatus(AsyncTaskResult.Status.FAILED);
+                result.setErrorMessage("파일 처리 중 문제가 발생했습니다: " + e.getMessage());
+            } catch (Exception e) {
+                System.err.println("개인정보 탐지 중 예기치 않은 오류 발생 (비동기): " + e.getMessage());
+                e.printStackTrace();
+                AsyncTaskResult result = taskResults.get(taskId);
+                result.setStatus(AsyncTaskResult.Status.FAILED);
+                result.setErrorMessage("개인정보 탐지 중 예기치 않은 오류가 발생했습니다: " + e.getMessage());
+            }
+        }, executorService); // @Async의 기본 Executor를 사용하거나, 특정 Executor를 지정할 수 있습니다.
+    }
+
+    // 실제 탐지 로직을 수행하는 내부 메서드
+    private Map<String, List<String>> performDetection(InputStream fileInputStream, String originalFilename) throws IOException {
+        String fileContent = null;
         boolean extracted = false;
 
-        // 적절한 ContentExtractor 찾아서 사용
+        // InputStream은 한 번만 읽을 수 있으므로, 각 추출기 시도 전에 재생성 또는 복사 필요
+        // 여기서는 바이트 배열로 복사된 InputStream을 사용하므로 문제 없습니다.
         for (ContentExtractor extractor : contentExtractors) {
             if (extractor.supports(originalFilename)) {
-                // InputStream은 한 번만 읽을 수 있으므로, 각 추출기 시도 전에 재생성 또는 복사 필요
-                // 여기서는 간단하게 첫 번째 지원하는 추출기로 시도하고 실패하면 에러를 던지도록 합니다.
-                // 실제 프로덕션에서는 ByteArrayInputStream으로 복사하여 여러 추출기가 시도하도록 하는 것이 좋습니다.
-                fileContent = extractor.extract(fileInputStream, originalFilename);
+                // IMPORTANT: InputStream은 한번 읽으면 소진되므로, 여기서 각 extractor에게
+                // 새로운 InputStream 인스턴스를 제공해야 합니다.
+                // ByteArrayInputStream을 사용하면 여러 번 재생성 가능합니다.
+                fileContent = extractor.extract(fileInputStream, originalFilename); // 이미 ByteArrayInputStream이므로 괜찮음
                 extracted = true;
                 break;
             }
@@ -51,17 +96,15 @@ public class PrivacyDetectionService {
 
         if (fileContent.trim().isEmpty()) {
             System.out.println("파일에서 추출된 텍스트가 비어 있습니다. 개인정보를 탐지할 수 없습니다.");
-            return new HashMap<>(); // 빈 결과 반환
+            return Collections.emptyMap(); // 빈 Map 반환
         }
 
-        // 모든 패턴 탐지 작업을 ExecutorService에 제출
         List<Future<List<String>>> futures = new ArrayList<>();
         for (PrivacyPattern p : patterns) {
             Callable<List<String>> detectorTask = new PrivacyDetector(fileContent, p.getName(), p.getRegex());
             futures.add(executorService.submit(detectorTask));
         }
 
-        // 모든 작업의 결과 취합
         Map<String, List<String>> detectionResults = new HashMap<>();
         for (int i = 0; i < futures.size(); i++) {
             PrivacyPattern p = patterns.get(i);
@@ -79,5 +122,9 @@ public class PrivacyDetectionService {
             }
         }
         return detectionResults;
+    }
+
+    public AsyncTaskResult getTaskResult(String taskId) {
+        return taskResults.getOrDefault(taskId, new AsyncTaskResult(AsyncTaskResult.Status.PENDING));
     }
 }
