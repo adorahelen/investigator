@@ -1,9 +1,4 @@
-package hycu.investigator.schdule.single;
-
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
+package hycu.investigator.test2.single;
 
 //@Component
 //public class MyTask {
