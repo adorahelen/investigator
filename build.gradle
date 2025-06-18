@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'war'
     id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -47,6 +48,7 @@ dependencies {
     // 필요하다면 아래 중 하나를 추가하세요. (slf4j-simple은 간단한 콘솔 출력)
 //    implementation 'org.slf4j:slf4j-simple:2.0.13' // Tika 2.x는 SLF4J 2.x와 호환됩니다.
 
+    providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat' // provided로 변경
 
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -61,10 +63,18 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
-bootJar {
-    archiveFileName="Police-engine.jar" // 생성될 JAR 파일 이름 지정
-    manifest {
-        attributes 'build-time': new Date().format('yyyy-MM-dd HH:mm:ss') // JAR 매니페스트에 빌드 시간 기록
+//bootJar {
+//    archiveFileName="Police-engine.jar" // 생성될 JAR 파일 이름 지정
+//    manifest {
+//        attributes 'build-time': new Date().format('yyyy-MM-dd HH:mm:ss') // JAR 매니페스트에 빌드 시간 기록
+//
+//    }
+//}
 
-    }
+bootJar {
+    enabled = false // fat jar 비활성화
+}
+war {
+    archiveFileName="Police-engine.war"
+    enabled = true // war 활성화
 }
