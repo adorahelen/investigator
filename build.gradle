@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'hycu'
-version = '0.0.1-SNAPSHOT'
+version = 'v1.0'
 
 java {
     toolchain {
@@ -24,6 +24,15 @@ repositories {
 }
 
 dependencies {
+
+    //HWPX, HWP, HWP2HWPX
+    // https://mvnrepository.com/artifact/kr.dogfoot/hwpxlib
+    implementation 'kr.dogfoot:hwpxlib:1.0.1'
+    // https://mvnrepository.com/artifact/kr.dogfoot/hwplib
+    implementation 'kr.dogfoot:hwplib:1.1.4'
+    //implementation 'kr.dogfoot:hwplib:1.0'
+    implementation files('lib/hwp2hwpx.jar')
+
 
 //    // 아파치 POI 를 통한 .docx와 .xlsx 파일 처리 -> Tika 하나로 전부 가능
 //    implementation 'org.apache.poi:poi-ooxml:5.2.5'
@@ -52,3 +61,10 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+bootJar {
+    archiveFileName="Police-engine.jar" // 생성될 JAR 파일 이름 지정
+    manifest {
+        attributes 'build-time': new Date().format('yyyy-MM-dd HH:mm:ss') // JAR 매니페스트에 빌드 시간 기록
+
+    }
+}
