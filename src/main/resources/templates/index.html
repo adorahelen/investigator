@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개인정보 탐지기 </title>
+    <link rel="stylesheet" href="/index-style.css">
+    <script src="/index.js"></script>
+
+</head>
+<body>
+<div class="container">
+    <h1>개인정보 탐지 웹 솔루션 (비동기&멀티스레드 : 다중 파일 처리)</h1>
+
+    <div class="upload-section">
+        <h2>파일 업로드</h2>
+        <input type="file" id="fileInput" multiple
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.html,.xml,.json,.eml,.msg">
+        <button onclick="uploadFiles()">파일 탐지 시작</button>
+    </div>
+
+    <div class="tasks-section">
+        <h2>진행 중인 작업</h2>
+        <div id="tasksList">
+            <p class="no-results">업로드된 파일이 없습니다.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

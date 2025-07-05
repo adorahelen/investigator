@@ -16,11 +16,11 @@ public class InvestigatorApplication  extends SpringBootServletInitializer {
         return application.sources(InvestigatorApplication.class);
     }
 
-//    public static void main(String[] args) {
-//        SpringApplication.run(InvestigatorApplication.class, args);
-//        System.out.println("Spring (외장 tomcat)웹 애플리케이션이 시작되었습니다. http://localhost:8080");
-//
-//    }
+    public static void main(String[] args) {
+        SpringApplication.run(InvestigatorApplication.class, args);
+        System.out.println("Spring (외장 tomcat)웹 애플리케이션이 시작되었습니다. http://localhost:8080");
+
+    }
 
 }
 
