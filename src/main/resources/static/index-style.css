@@ -1,50 +1,312 @@
-body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-.container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-h1 { text-align: center; color: #0056b3; margin-bottom: 30px; }
-.upload-section, .tasks-section { margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa; }
-.upload-section h2, .tasks-section h2 { margin-top: 0; color: #0056b3; }
-input[type="file"] { display: block; margin-bottom: 15px; }
-button {
-    padding: 10px 20px;
-    background-color: #007bff;
+/* Variables for easier theme management */
+:root {
+    --primary-blue: #3498db;
+    --primary-dark-blue: #2980b9;
+    --accent-green: #2ecc71;
+    --accent-red: #e74c3c;
+    --text-dark: #2c3e50;
+    --text-light: #7f8c8d;
+    --bg-light: #f8f9fa;
+    --bg-medium: #ecf0f1;
+    --card-bg: #ffffff;
+    --border-light: #e0e0e0;
+    --shadow-light: rgba(0, 0, 0, 0.05);
+    --shadow-medium: rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Noto Sans KR', 'Roboto', Arial, sans-serif;
+    margin: 0;
+    padding: 30px 20px;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 960px;
+    margin: auto;
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px var(--shadow-medium);
+}
+
+h1 {
+    text-align: center;
+    color: var(--primary-dark-blue);
+    margin-bottom: 10px;
+    font-size: 2.2em;
+    font-weight: 700;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-light);
+    margin-top: -5px;
+    margin-bottom: 30px;
+    font-size: 0.95em;
+    font-weight: 400;
+}
+
+.card {
+    margin-bottom: 30px;
+    padding: 30px;
+    border-radius: 10px;
+    background-color: var(--card-bg);
+    box-shadow: 0 4px 15px var(--shadow-light);
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+.upload-section h2, .tasks-section h2 {
+    margin-top: 0;
+    color: var(--primary-dark-blue);
+    font-size: 1.6em;
+    border-bottom: 2px solid var(--border-light);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Custom file input styling */
+.file-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+input[type="file"] {
+    display: none; /* Hide default file input */
+}
+
+.custom-file-upload {
+    display: inline-block;
+    padding: 12px 25px;
+    background-color: var(--primary-blue);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 1.0em;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    flex-shrink: 0; /* Prevent shrinking */
 }
-button:hover { background-color: #0056b3; }
-#tasksList { margin-top: 20px; }
+
+.custom-file-upload:hover {
+    background-color: var(--primary-dark-blue);
+    transform: translateY(-1px);
+}
+
+.selected-file-names {
+    font-size: 0.95em;
+    color: var(--text-light);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex-grow: 1; /* Allow it to take available space */
+}
+
+button {
+    padding: 12px 25px;
+    background-color: var(--accent-green);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.05em;
+    font-weight: 500;
+    display: block; /* Make button full width */
+    width: 100%;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.2);
+}
+
+button:hover {
+    background-color: #27ae60; /* Slightly darker green */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+#tasksList {
+    margin-top: 20px;
+}
+
 .task-item {
-    background-color: #e9f7ef;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    border: 1px solid #d4edda;
+    background-color: var(--bg-light);
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-light);
+    transition: all 0.3s ease;
 }
-.task-item.failed { background-color: #f8d7da; border-color: #f5c6cb; }
-.task-item.completed { background-color: #d4edda; border-color: #c3e6cb; }
-.task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.task-name { font-weight: bold; color: #0056b3; }
-.task-status { font-style: italic; color: #666; }
+
+.task-item.pending {
+    border-left: 5px solid var(--primary-blue);
+}
+.task-item.failed {
+    border-left: 5px solid var(--accent-red);
+    background-color: #fef0f0; /* Lighter red tint */
+}
+.task-item.completed {
+    border-left: 5px solid var(--accent-green);
+    background-color: #f0fff0; /* Lighter green tint */
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--border-light);
+}
+
+.task-name {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 1.1em;
+}
+
+.task-status {
+    font-style: italic;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    width: 20px;
-    height: 20px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    border-left-color: #007bff;
+    border-left-color: var(--primary-blue);
     animation: spin 1s ease infinite;
     display: inline-block;
     vertical-align: middle;
-    margin-left: 5px;
+    flex-shrink: 0;
 }
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-.task-results { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
-.result-category h4 { color: #28a745; margin-bottom: 5px; }
-.result-category ul { list-style-type: disc; margin-left: 20px; padding: 0; }
-.result-category li { background-color: #f0fdf5; padding: 6px; border-radius: 3px; margin-bottom: 3px; }
-.no-results { color: #555; font-style: italic; }
-.error-message { color: #dc3545; font-weight: bold; }
+
+.status-icon {
+    font-size: 1.1em;
+    font-style: normal;
+}
+
+.completed-icon {
+    color: var(--accent-green);
+}
+
+.failed-icon {
+    color: var(--accent-red);
+}
+
+.task-results {
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.result-category h4 {
+    color: var(--primary-dark-blue);
+    margin-bottom: 8px;
+    font-size: 1.0em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.result-category h4::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--accent-green); /* Default for success */
+    margin-right: 5px;
+}
+
+.result-category h4 span {
+    color: var(--text-light);
+    font-weight: 400;
+    font-size: 0.9em;
+}
+
+/* Override dot color for warning/danger categories if needed */
+.result-category h4:has(ul li:has(.warning-item))::before {
+    background-color: orange; /* Example: if you add a specific class for warnings */
+}
+
+.result-category ul {
+    list-style: none; /* Remove default bullet */
+    margin: 0;
+    padding: 0;
+    margin-left: 10px; /* Indent slightly */
+}
+
+.result-category li {
+    background-color: var(--bg-light);
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-bottom: 6px;
+    font-size: 0.9em;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.result-category li::before {
+    content: '•'; /* Custom bullet point */
+    color: var(--primary-blue);
+    font-size: 1.2em;
+    line-height: 1;
+}
+
+.no-results {
+    color: var(--text-light);
+    font-style: italic;
+    text-align: center;
+    padding: 15px 0;
+}
+
+.error-message {
+    color: var(--accent-red);
+    font-weight: 600;
+    text-align: center;
+    padding: 15px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 30px 20px;
+    }
+    h1 {
+        font-size: 1.8em;
+    }
+    .upload-section h2, .tasks-section h2 {
+        font-size: 1.4em;
+    }
+    .file-input-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .custom-file-upload {
+        width: 100%;
+        text-align: center;
+    }
+    .selected-file-names {
+        margin-top: 10px;
+    }
+}
